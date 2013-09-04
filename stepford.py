@@ -1,3 +1,5 @@
+import logging
+
 from functools import wraps
 from urllib2 import urlopen, HTTPError
 from urllib import urlencode
@@ -15,14 +17,16 @@ API_EC_TEST_ACCOUNTS_CANT_REMOVE_APP = 2902
 API_EC_TEST_ACCOUNTS_INVALID_ID = 2901
 API_EC_TEST_ACCOUNTS_TOO_MANY = 2900
 
+# other errors encountered
+API_EC_UNABLE_TO_ACCESS_APPLICATION = 200
+
 
 class FacebookError(HTTPError):
     def __init__(self, err):
         data = json.loads(err.fp.read())['error']
-        self.message = data['message']
-        self.msg = self.message
-        self.http_code = err.code
-        self.code = data['code']
+        HTTPError.__init__(self, err.url, err.code, data['message'], 
+            err.headers, err.fp)
+        self.api_code = data['code'] 
         self.type = data['type']
 
 
@@ -168,6 +172,14 @@ def update(userid, access_token, name=None, pwd=None):
 
 @translate_http_error
 def install(userid, install_to_token, clientid, access_token, scope=None):
+    """ Installs an app for the given user
+
+    :param userid: The user to install the app for
+    :param install_to_token: The app token for the app being installed
+    :param clientid: The client_id of the app that owns the test user
+    :param access_token: The app token of the app that owns the test user
+    :param scope: The scope to install the app for the test user with
+    """
     qs = {
         'installed': 'true',
         'uid': userid,
@@ -180,28 +192,21 @@ def install(userid, install_to_token, clientid, access_token, scope=None):
 
     resp = urlopen('{}/{}/accounts/test-users?{}'.format(_URIROOT,
         clientid, urlencode(qs)))
-
     return resp.code == 200
 
 
 @translate_http_error
 def uninstall(userid, clientid, access_token):
+    """ Uninstalls an app for the given user
+
+    :param userid: The user to uninstall the app for
+    :param clientid: The client id of the app being removed
+    :param access_token: The access token of the app being removed
+    """
     resp = urlopen('{}/{}/accounts/test-users?{}'.format(_URIROOT,
         clientid, urlencode({
             'access_token': access_token,
             'method': 'delete',
             'uid': userid,
         })))
-
     return resp.code == 200
-
-
-"""
-@translate_http_error
-def purge(clientid, access_token): # pragma: no cover
-    for user in get(clientid, access_token):
-        try:
-            delete(user['id'], clientid, access_token)
-        except Exception as e:
-            pass
-"""
