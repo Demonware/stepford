@@ -1,9 +1,9 @@
-from os.pth import abspath, dirname, join
-from setuptools import setup
+from os.path import abspath, dirname, join
+from setuptools import setup, find_packages
 
 here = abspath(dirname(__file__))
 README = '\n'.join([open(join(here, 'README')).read(),
-    open(join(here, 'CHANGES')).read())
+    open(join(here, 'CHANGES')).read()])
 
 requires = []
 
@@ -28,5 +28,6 @@ setup(name='stepford',
     ],
     long_description=README,
     install_requires=requires,
-    packages=['stepford'],
+    packages=find_packages(),
+    test_suite='tests.TestStepford',
 )

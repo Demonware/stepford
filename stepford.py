@@ -20,17 +20,30 @@ API_EC_TEST_ACCOUNTS_TOO_MANY = 2900
 # other errors encountered
 API_EC_UNABLE_TO_ACCESS_APPLICATION = 200
 
+_log = logging.getLogger(__name__)
 
 class FacebookError(HTTPError):
+    """ Exposes Facebook-specific error attributes
+    """
     def __init__(self, err):
         data = json.loads(err.fp.read())['error']
         HTTPError.__init__(self, err.url, err.code, data['message'], 
             err.headers, err.fp)
+        
         self.api_code = data['code'] 
-        self.type = data['type']
+        """ The client-facing Facebook error code """
 
+        self.type = data['type']
+        """ Error type """
 
 def translate_http_error(fn):
+    """ HTTPError to FacebookError translation decorator
+    
+    Decorates functions, handles :py:class:`urllib2.HTTPError` exceptions and
+    translates them into :class:`stepford.FacebookError`
+
+    :param fn: The function to decorate with translation handling
+    """
     @wraps(fn)
     def inner(*args, **kwargs):
         try:
@@ -78,6 +91,7 @@ def get(client_id, access_token):
 def create(client_id, access_token, installed=True, name=None,
                 locale='en_US', permissions='read_stream'):
     """ Creates a test user
+
     :param client_id: Your app's client ID, as provided by Facebook
     :param access_token: Your app's access_token, as retrieved by ``app_token``
                          (alternatively, this can be retrieved by Facebook's
