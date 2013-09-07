@@ -1,8 +1,13 @@
 import json
-
-from urllib2 import HTTPError, urlopen
-from urllib import urlencode
 from unittest import TestCase
+
+try:
+    from urllib2 import HTTPError, urlopen
+    from urllib import urlencode
+except ImportError:
+    from urllib.request import urlopen
+    from urllib.parse import urlencode, parse_qsl
+    from urllib.error import HTTPError
 
 import stepford
 
@@ -63,7 +68,7 @@ class TestStepford(TestCase):
             resp = urlopen('{}/me/friends?{}'.format(stepford._URIROOT,
                 urlencode({'access_token': user['access_token']})))
 
-            data = json.loads(resp.read())
+            data = json.loads(resp.read().decode())
 
             lusers = set(map(lambda u: u['id'], self.users)) - set(
                 [user['id']])
@@ -82,7 +87,7 @@ class TestStepford(TestCase):
         def _getname(token):
             resp = urlopen('{}/me?{}'.format(stepford._URIROOT, urlencode({
                 'access_token': user['access_token']})))
-            return json.loads(resp.read())['name']
+            return json.loads(resp.read().decode())['name']
 
         user = self.users[0]
         stepford.update(user['id'], self.access_token, name='foo',
@@ -91,8 +96,8 @@ class TestStepford(TestCase):
         # because of the password change, we have to get the full list of app
         # test users (ew) in order to get the updated access_token or the user
         # we're currently working with.
-        user['access_token'] = filter(lambda u: u['id'] == user['id'], 
-            stepford.get(CLIENT_ID, self.access_token))[0]['access_token']
+        user['access_token'] = list(filter(lambda u: u['id'] == user['id'], 
+            stepford.get(CLIENT_ID, self.access_token)))[0]['access_token']
 
         self.assertEqual(_getname(user['access_token']), 'foo')
 
@@ -116,7 +121,7 @@ class TestStepford(TestCase):
                 'access_token': b_token, 
             })))
         self.assertTrue('stepford_b' in map(lambda app: app['name'],
-            json.loads(resp.read())['data']))
+            json.loads(resp.read().decode())['data']))
 
         try:
             # can't delete user account while other apps are still installed

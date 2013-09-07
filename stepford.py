@@ -1,9 +1,14 @@
 import logging
 
 from functools import wraps
-from urllib2 import urlopen, HTTPError
-from urllib import urlencode
-from urlparse import parse_qsl
+try:
+    from urllib2 import urlopen, HTTPError
+    from urllib import urlencode
+    from urlparse import parse_qsl
+except ImportError:
+    from urllib.request import urlopen
+    from urllib.parse import urlencode, parse_qsl
+    from urllib.error import HTTPError
 try:
     import simplejson as json
 except ImportError:
@@ -26,7 +31,7 @@ class FacebookError(HTTPError):
     """ Exposes Facebook-specific error attributes
     """
     def __init__(self, err):
-        data = json.loads(err.fp.read())['error']
+        data = json.loads(err.fp.read().decode())['error']
         HTTPError.__init__(self, err.url, err.code, data['message'], 
             err.headers, err.fp)
         
@@ -69,7 +74,7 @@ def app_token(client_id, client_secret):
         'grant_type': 'client_credentials',
     })))
 
-    return dict(parse_qsl(resp.read()))['access_token']
+    return dict(parse_qsl(resp.read().decode()))['access_token']
 
 
 @translate_http_error
@@ -84,7 +89,7 @@ def get(client_id, access_token):
     resp = urlopen('{}/{}/accounts/test-users?{}'.format(_URIROOT, 
         client_id, urlencode({'access_token': access_token})))
     
-    return json.loads(resp.read())['data']
+    return json.loads(resp.read().decode())['data']
 
 
 @translate_http_error
@@ -116,7 +121,7 @@ def create(client_id, access_token, installed=True, name=None,
             'access_token': access_token,
         })))
 
-    return json.loads(resp.read())
+    return json.loads(resp.read().decode())
 
 
 @translate_http_error
@@ -134,7 +139,7 @@ def delete(userid, client_id, access_token):
         'access_token': access_token,
     })))
  
-    return resp.read() == 'true'
+    return resp.read() == b'true'
 
 
 @translate_http_error
