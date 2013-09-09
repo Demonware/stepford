@@ -1,4 +1,5 @@
-import logging
+""" Implementation of the Facebook test user API
+"""
 
 from functools import wraps
 try:
@@ -25,36 +26,52 @@ API_EC_TEST_ACCOUNTS_TOO_MANY = 2900
 # other errors encountered
 API_EC_UNABLE_TO_ACCESS_APPLICATION = 200
 
-_log = logging.getLogger(__name__)
 
-class FacebookError(HTTPError):
+class FacebookError(HTTPError): # pylint: disable=R0901
     """ Exposes Facebook-specific error attributes
+
+    Methods wrapped with :meth:`stepford.translate_http_error` will raise a
+    :class:`stepford.FacebookError` whenever an :py:class:`urllib2.HTTPError` is
+    encountered. This helps expose more detailed information about the error
+    than the simple HTTP error code and message.
+
+    .. attribute:: api_code
+
+       The Facebook client-facing error code
+
+    .. attribute:: type
+
+       The error category as defined by Facebook
     """
     def __init__(self, err):
-        data = json.loads(err.fp.read().decode())['error']
-        HTTPError.__init__(self, err.url, err.code, data['message'], 
+        try:
+            data = json.loads(err.fp.read().decode())['error']
+        except (ValueError, KeyError):
+            # something REALLY bad happened and Facebook didn't send along
+            # their usual error payload
+            raise
+
+        HTTPError.__init__(self, err.url, err.code, data['message'],
             err.headers, err.fp)
-        
-        self.api_code = data['code'] 
-        """ The client-facing Facebook error code """
 
+        self.api_code = data['code']
         self.type = data['type']
-        """ Error type """
 
-def translate_http_error(fn):
+
+def translate_http_error(func):
     """ HTTPError to FacebookError translation decorator
-    
+
     Decorates functions, handles :py:class:`urllib2.HTTPError` exceptions and
     translates them into :class:`stepford.FacebookError`
 
-    :param fn: The function to decorate with translation handling
+    :param func: The function to decorate with translation handling
     """
-    @wraps(fn)
-    def inner(*args, **kwargs):
+    @wraps(func)
+    def inner(*args, **kwargs): # pylint: disable=C0111
         try:
-            return fn(*args, **kwargs)
-        except HTTPError as e:
-            raise FacebookError(e)
+            return func(*args, **kwargs)
+        except HTTPError as err:
+            raise FacebookError(err)
     return inner
 
 
@@ -86,15 +103,16 @@ def get(client_id, access_token):
                          (alternatively, this can be retrieved by Facebook's
                          testing toolset).
     """
-    resp = urlopen('{}/{}/accounts/test-users?{}'.format(_URIROOT, 
+    resp = urlopen('{}/{}/accounts/test-users?{}'.format(_URIROOT,
         client_id, urlencode({'access_token': access_token})))
-    
+
     return json.loads(resp.read().decode())['data']
 
 
+# pylint: disable=R0913
 @translate_http_error
 def create(client_id, access_token, installed=True, name=None,
-                locale='en_US', permissions='read_stream'):
+    locale='en_US', permissions='read_stream'):
     """ Creates a test user
 
     :param client_id: Your app's client ID, as provided by Facebook
@@ -119,13 +137,14 @@ def create(client_id, access_token, installed=True, name=None,
             'permissions': permissions,
             'method': 'post',
             'access_token': access_token,
+            'name': name,
         })))
 
     return json.loads(resp.read().decode())
 
 
 @translate_http_error
-def delete(userid, client_id, access_token):
+def delete(userid, access_token):
     """ Deletes a test user
 
     :param userid: The ID of the user to delete.
@@ -138,7 +157,7 @@ def delete(userid, client_id, access_token):
         'method': 'delete',
         'access_token': access_token,
     })))
- 
+
     return resp.read() == b'true'
 
 
@@ -151,17 +170,17 @@ def connect(*users):
     if len(users) <= 1:
         raise ValueError('len(users) must be > 1')
 
-    def _connect(a, b):
+    def _connect(user_a, user_b): # pylint: disable=C0111
         return urlopen('{}/{}/friends/{}?{}'.format(_URIROOT,
-            a['id'], b['id'], urlencode({
-                'access_token': a['access_token'],
+            user_a['id'], user_b['id'], urlencode({
+                'access_token': user_a['access_token'],
                 'method': 'post'
             })))
 
-    for idx, a in enumerate(users[:-1]):
-        for b in users[idx + 1:]:
-            _connect(a, b)
-            _connect(b, a)
+    for idx, user_a in enumerate(users[:-1]):
+        for user_b in users[idx + 1:]:
+            _connect(user_a, user_b)
+            _connect(user_b, user_a)
 
 
 @translate_http_error
@@ -175,17 +194,17 @@ def update(userid, access_token, name=None, pwd=None):
 
     :return: True on success
     """
-    qs = {
+    query = {
         'method': 'post',
         'access_token': access_token,
     }
     if name is not None:
-        qs['name'] = name
+        query['name'] = name
 
     if pwd is not None:
-        qs['password'] = pwd
+        query['password'] = pwd
 
-    resp = urlopen('{}/{}?{}'.format(_URIROOT, userid, urlencode(qs)))
+    resp = urlopen('{}/{}?{}'.format(_URIROOT, userid, urlencode(query)))
     return resp.code == 200
 
 
@@ -199,7 +218,7 @@ def install(userid, install_to_token, clientid, access_token, scope=None):
     :param access_token: The app token of the app that owns the test user
     :param scope: The scope to install the app for the test user with
     """
-    qs = {
+    query = {
         'installed': 'true',
         'uid': userid,
         'owner_access_token': access_token,
@@ -207,10 +226,10 @@ def install(userid, install_to_token, clientid, access_token, scope=None):
         'method': 'post',
     }
     if scope is not None:
-        qs['scope'] = scope
+        query['scope'] = scope
 
     resp = urlopen('{}/{}/accounts/test-users?{}'.format(_URIROOT,
-        clientid, urlencode(qs)))
+        clientid, urlencode(query)))
     return resp.code == 200
 
 

@@ -31,7 +31,7 @@ class TestStepford(TestCase):
     @classmethod
     def tearDownClass(cls):
         for user in cls.users:
-            stepford.delete(user['id'], CLIENT_ID, cls.access_token)
+            stepford.delete(user['id'], cls.access_token)
 
     def test_get(self):
         self.assertEqual(len(self.users), NUM_TEST_USERS)
@@ -48,14 +48,13 @@ class TestStepford(TestCase):
         self.assertTrue(user['id'] in map(lambda u: u['id'], stepford.get(
             CLIENT_ID, self.access_token)))
 
-        self.assertTrue(stepford.delete(user['id'], CLIENT_ID,
-            self.access_token))
+        self.assertTrue(stepford.delete(user['id'], self.access_token))
 
         self.assertTrue(user['id'] not in map(lambda u: u['id'], stepford.get(
             CLIENT_ID, self.access_token)))
 
         try:
-            stepford.delete(user['id'], CLIENT_ID, self.access_token)
+            stepford.delete(user['id'], self.access_token)
         except stepford.FacebookError as e:
             self.assertEqual(e.api_code, 
                 stepford.API_EC_UNABLE_TO_ACCESS_APPLICATION)
@@ -125,7 +124,7 @@ class TestStepford(TestCase):
 
         try:
             # can't delete user account while other apps are still installed
-            stepford.delete(user['id'], CLIENT_ID, self.access_token)
+            stepford.delete(user['id'], self.access_token)
         except stepford.FacebookError as e:
             self.assertEqual(e.api_code, 
                 stepford.API_EC_TEST_ACCOUNTS_CANT_DELETE)
