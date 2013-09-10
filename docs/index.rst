@@ -1,6 +1,9 @@
 .. contents::
    :depth: 2
 
+.. image:: https://secure.travis-ci.org/demianbrecht/stepford.png?branch=master
+   :target: http://travis-ci.org/#!/demianbrecht/stepford
+
 Overview
 ========
 

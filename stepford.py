@@ -35,6 +35,11 @@ class FacebookError(HTTPError): # pylint: disable=R0901
     encountered. This helps expose more detailed information about the error
     than the simple HTTP error code and message.
 
+    In the event that ``stepford`` encounters an unexpected API error (i.e. one
+    that doesn't contain the usual error data payload),
+    :attr:`~stepford.FacebookError.api_code` and
+    :attr:`~stepford.FacebookError.type` will be set to ``None``.
+
     .. attribute:: api_code
 
        The Facebook client-facing error code
@@ -49,7 +54,11 @@ class FacebookError(HTTPError): # pylint: disable=R0901
         except (ValueError, KeyError):
             # something REALLY bad happened and Facebook didn't send along
             # their usual error payload
-            raise
+            data = {
+                'message': 'Unhandled error',
+                'code': None,
+                'type': None,
+            }
 
         HTTPError.__init__(self, err.url, err.code, data['message'],
             err.headers, err.fp)
