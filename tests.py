@@ -1,4 +1,5 @@
 import json
+from io import BytesIO
 from unittest import TestCase
 
 try:
@@ -130,3 +131,19 @@ class TestStepford(TestCase):
                 stepford.API_EC_TEST_ACCOUNTS_CANT_DELETE)
 
         self.assertTrue(stepford.uninstall(user['id'], CLIENT_B_ID, b_token))
+
+    def test_something_bad_happened(self):
+        urlopen_ = stepford.urlopen
+        def _raise(url, *args, **kwargs):
+            raise HTTPError(url, 500, 'err..', {},
+                BytesIO('something bad happened'))
+
+        stepford.urlopen = _raise
+        try:
+            token = stepford.app_token(CLIENT_ID, CLIENT_SECRET)
+        except stepford.FacebookError as e:
+            stepford.urlopen = urlopen_
+
+            self.assertEqual(e.api_code, None)
+            self.assertEqual(e.type, None)
+            self.assertEqual(e.msg, 'Unhandled error')
