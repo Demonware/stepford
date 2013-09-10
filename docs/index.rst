@@ -4,7 +4,7 @@
 Overview
 ========
 
-Integration testing is generally a pain in the tits. Stepford attempts to 
+Integration testing is generally a pain. Stepford attempts to 
 alleviate as much of that pain as possible for apps requiring integration
 with the Facebook Graph API. Stepford is a Python implementation of the
 Facebook test user API as defined at https://developers.facebook.com/docs/test_users.
