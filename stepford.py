@@ -93,6 +93,8 @@ def app_token(client_id, client_secret):
 
     :param client_id: Your app's client ID, as provided by Facebook
     :param client_secret: Your app's client secret, as provided by Facebook
+
+    :return: A dict containing the app token
     """
     resp = urlopen('{}/oauth/access_token?{}'.format(_URIROOT, urlencode({
         'client_id': client_id,
@@ -111,6 +113,8 @@ def get(client_id, access_token):
     :param access_token: Your app's access_token, as retrieved by ``app_token``
                          (alternatively, this can be retrieved by Facebook's
                          testing toolset).
+    
+    :return: A list of ``dict`` elements containing user details
     """
     resp = urlopen('{}/{}/accounts/test-users?{}'.format(_URIROOT,
         client_id, urlencode({'access_token': access_token})))
@@ -136,6 +140,8 @@ def create(client_id, access_token, installed=True, name=None,
     :param permissions: The scope approved by the test user. This should be a
                         comma-delimited list of resource types approved by this
                         user for your application.
+
+    :return: A ``dict`` containing user details
     """
     resp = urlopen('{}/{}/accounts/test-users?{}'.format(
         _URIROOT,
@@ -161,6 +167,8 @@ def delete(userid, access_token):
     :param access_token: Your app's access_token, as retrieved by ``app_token``
                          (alternatively, this can be retrieved by Facebook's
                          testing toolset).
+
+    :return: ``True`` on success
     """
     resp = urlopen('{}/{}?{}'.format(_URIROOT, userid, urlencode({
         'method': 'delete',
@@ -201,7 +209,7 @@ def update(userid, access_token, name=None, pwd=None):
     :param name (optional): If specified, what name to assign to the user
     :param pwd (optional): If specified, what password to assign to the user
 
-    :return: True on success
+    :return: ``True`` on success
     """
     query = {
         'method': 'post',
@@ -226,6 +234,8 @@ def install(userid, install_to_token, clientid, access_token, scope=None):
     :param clientid: The client_id of the app that owns the test user
     :param access_token: The app token of the app that owns the test user
     :param scope: The scope to install the app for the test user with
+
+    :return: ``True`` on success
     """
     query = {
         'installed': 'true',
@@ -249,6 +259,8 @@ def uninstall(userid, clientid, access_token):
     :param userid: The user to uninstall the app for
     :param clientid: The client id of the app being removed
     :param access_token: The access token of the app being removed
+
+    :return: ``True`` on success
     """
     resp = urlopen('{}/{}/accounts/test-users?{}'.format(_URIROOT,
         clientid, urlencode({
